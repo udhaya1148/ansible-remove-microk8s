@@ -1,0 +1,51 @@
+---
+- name: Remove MicroK8s from Ubuntu
+  hosts: all
+  become: yes
+  vars:
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+
+  tasks:
+#    - name: Stop MicroK8s service
+#      service:
+#        name: snap.microk8s.daemon-apiserver
+#        state: stopped
+#      ignore_errors: yes
+
+    - name: Remove MicroK8s
+      snap:
+        name: microk8s
+        state: absent
+
+    - name: Remove snapd
+      apt:
+        name: snapd
+        state: absent
+
+#    - name: Remove kubectl alias if exists
+#      shell: |
+#        snap unalias kubectl
+#      args:
+#        executable: /bin/bash
+#      ignore_errors: yes
+
+    - name: Remove .kube directory
+      file:
+        path: /home/{{ ansible_user }}/.kube
+        state: absent
+        force: yes
+
+    - name: Remove user from microk8s group
+      user:
+        name: "{{ ansible_user }}"
+        groups: microk8s
+        append: no
+        state: present
+      ignore_errors: yes
+
+    - name: Remove snap cache
+      shell: |
+        rm -rf /var/cache/snapd/
+      args:
+        executable: /bin/bash
+      ignore_errors: yes
